@@ -135,10 +135,53 @@ function drawHistory(){
 }
 
 function voice(){
-    let R=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!R){ alert("Гласовото търсене не се поддържа."); return; }
-    let r=new R(); r.lang="bg-BG"; r.start();
-    r.onresult=e=>{ document.getElementById("q").value=e.results[0][0].transcript; smartSearch(); }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.msSpeechRecognition;
+    
+    if(!SpeechRecognition){ 
+        alert("Вашият браузър не поддържа гласово търсене. Опитайте с Chrome или Edge."); 
+        return; 
+    }
+    
+    try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "bg-BG";
+        
+        const mic = document.querySelector('.mic');
+        mic.textContent = '🎤🔴 Слушам...';
+        
+        recognition.onstart = () => {
+            console.log('Микрофон активен');
+        };
+        
+        recognition.onresult = (event) => {
+            let transcript = '';
+            for(let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+            if(transcript) {
+                document.getElementById("q").value = transcript;
+                smartSearch();
+            }
+            mic.textContent = '🎤';
+        };
+        
+        recognition.onerror = (event) => {
+            console.error('Грешка:', event.error);
+            alert("Грешка при гласово търсене: " + event.error);
+            mic.textContent = '🎤';
+        };
+        
+        recognition.onend = () => {
+            mic.textContent = '🎤';
+        };
+        
+        recognition.start();
+    } catch(e) {
+        console.error('Грешка:', e);
+        alert("Грешка при активиране на микрофон: " + e.message);
+    }
 }
 
 async function speakWiki(q){
