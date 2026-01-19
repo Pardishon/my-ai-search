@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>Умно AI търсене</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root {
+    --bg: #f2f2f2;
+    --card: #fff;
+    --text: #000;
+    --input: #fff;
+}
+body.dark {
+    --bg: #121212;
+    --card: #1e1e1e;
+    --text: #fff;
+    --input: #2a2a2a;
+}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.container {
+    background: var(--card);
+    padding: 20px;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.15);
+    text-align: center;
+}
+input {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: var(--input);
+    color: var(--text);
+}
+.buttons {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+}
+button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+.google { background:#4285F4;color:#fff }
+.ai { background:#111;color:#fff }
+.wiki { background:#888;color:#fff }
+button.active { outline: 2px solid #00000033; opacity: 1; }
+.mic { font-size:28px; cursor:pointer; margin:8px 0; }
+.controls { display:flex; justify-content:space-between; font-size:14px; opacity:0.85; margin-top:5px; }
+.control { cursor:pointer; }
+.history { text-align:left; font-size:13px; margin-top:10px; max-height:100px; overflow:auto; }
+.history div { cursor:pointer; padding:4px 0; }
+</style>
+</head>
+
+<body>
+<div class="container">
+<h3>🔎 Умно AI търсене</h3>
+
+<input id="q" placeholder="Напиши или задай въпрос..." 
+onkeydown="if(event.key==='Enter') smartSearch()">
+
+<div class="buttons">
+<button class="google" onclick="mode='google';saveMode()">Google</button>
+<button class="ai" onclick="mode='ai';saveMode()">AI</button>
+<button class="wiki" onclick="mode='wiki';saveMode()">Wikipedia</button>
+</div>
+
+<div class="mic" onclick="voice()">🎤</div>
+
+<div class="controls">
+<div class="control" onclick="toggleTheme()">🌙 / ☀️ Тъмен режим</div>
+</div>
+
+<div class="history" id="history"></div>
+</div>
+
+<script>
+let mode = localStorage.getItem("mode") || "ai";
+let theme = localStorage.getItem("theme") || "light";
+let history = JSON.parse(localStorage.getItem("history")||"[]");
+
+function applySettings(){
+    document.body.classList.toggle("dark", theme==="dark");
+    document.querySelectorAll(".buttons button").forEach(b=>b.classList.remove("active"));
+    document.querySelector("."+mode).classList.add("active");
+    drawHistory();
+}
+function saveMode(){ localStorage.setItem("mode",mode); }
+function toggleTheme(){ theme = theme==="dark"?"light":"dark"; localStorage.setItem("theme",theme); applySettings(); }
+
+function smartSearch(){
+    let q=document.getElementById("q").value.trim();
+    if(!q) return;
+    if(q.includes("?")) mode="ai"; saveMode();
+    saveHistory(q);
+    if(mode==="google") open("https://www.google.com/search?q="+encodeURIComponent(q));
+    else if(mode==="ai") open("https://www.perplexity.ai/search?q="+encodeURIComponent(q));
+    else { speakWiki(q); open("https://bg.wikipedia.org/wiki/"+encodeURIComponent(q)); }
+}
+
+function saveHistory(q){
+    history.unshift(q);
+    history=history.slice(0,10);
+    localStorage.setItem("history",JSON.stringify(history));
+    drawHistory();
+}
+
+function drawHistory(){
+    let h=document.getElementById("history");
+    h.innerHTML="<b>История:</b>";
+    history.forEach(x=>{
+        let d=document.createElement("div");
+        d.textContent="• "+x;
+        d.onclick=()=>{document.getElementById("q").value=x;}
+        h.appendChild(d);
+    })
+}
+
+function voice(){
+    let R=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!R){ alert("Гласовото търсене не се поддържа."); return; }
+    let r=new R(); r.lang="bg-BG"; r.start();
+    r.onresult=e=>{ document.getElementById("q").value=e.results[0][0].transcript; smartSearch(); }
+}
+
+async function speakWiki(q){
+    try{
+        let res=await fetch("https://bg.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(q));
+        let data=await res.json();
+        speak(data.extract);
+    }catch{}
+}
+
+function speak(text){ if(!text) return; let u=new SpeechSynthesisUtterance(text); u.lang="bg-BG"; speechSynthesis.speak(u); }
+
+applySettings();
+</script>
+</body>
+</html>

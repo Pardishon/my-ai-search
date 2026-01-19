@@ -1,0 +1,22 @@
+{
+    // Използвайте подсказките, за да видите възможните атрибути.
+    // Посочете, за да видите описания на съществуващите атрибути.
+    // За повече информация посетете: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Chrome",
+            "request": "launch",
+            "type": "chrome",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
+        },
+        chrome
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Open index2.html",
+            "file": "/index2.html"
+        }
+    ]
+}
